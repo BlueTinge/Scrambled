@@ -9,15 +9,18 @@ public class EggMovement : MonoBehaviour {
     public readonly string[] Horizontal = { "Horizontal1","Horizontal2" };
 
     //Initial physics values
-    public readonly float maxWalkSpeed = 2f;
-    public readonly float maxDashSpeed = 3f;
-    public readonly float jumpForce = 200f;
+    public readonly float walkAcceleration = .25f;
+    public readonly float maxWalkSpeed = 3f;
+    public readonly float DashSpeed = 4f;
+    public readonly float jumpForce = 350f;
+    public readonly float extendedJumpForce = 50f; //holding down arrow key adds increasing force
 
     //IO
     public int playerNum = 1;
     
     //Physics variables, etc
     public bool touchingGround = false;
+    public int framesSinceJump = 1;
     public float groundRadius = 0.2f;
     public LayerMask whatIsGround;
     public Transform groundCheck;
@@ -29,9 +32,7 @@ public class EggMovement : MonoBehaviour {
     // Use this for initialization
     void Start()
     {
-
-
-        //anim = GetComponent<Animator>();
+        anim = GetComponent<Animator>();
 
     }
 
@@ -43,7 +44,46 @@ public class EggMovement : MonoBehaviour {
 
         float move = Input.GetAxis(Horizontal[playerNum-1]);
 
-        GetComponent<Rigidbody2D>().velocity = new Vector3(move * maxWalkSpeed, GetComponent<Rigidbody2D>().velocity.y);
+        float moveSpeed = GetComponent<Rigidbody2D>().velocity.x + (move * walkAcceleration);
+        if (Mathf.Abs(moveSpeed) > Mathf.Abs(maxWalkSpeed))
+        {
+            moveSpeed = Mathf.Sign(move)* maxWalkSpeed;
+        }
+        GetComponent<Rigidbody2D>().velocity = new Vector3(moveSpeed, GetComponent<Rigidbody2D>().velocity.y);
+
+        anim.SetFloat("xSpeed", Mathf.Abs(moveSpeed));
+        if(moveSpeed > .01) anim.SetBool("Running", true);
+        else if (GetComponent<Rigidbody2D>().velocity.x == 0f) anim.SetBool("Running", false);
+
+        //if on the ground and the jump key is pressed, add a jump force
+        if (touchingGround && Input.GetAxis(Vertical[playerNum - 1]) > 0)
+        {
+            framesSinceJump++;
+
+            GetComponent<Rigidbody2D>().AddForce(new Vector2(0, jumpForce));
+
+            touchingGround = false;
+        }
+
+        //extended jumps will increase force added to jump
+        /**
+        if (Input.GetAxis(Vertical[playerNum - 1]) > 0 && framesSinceJump > 0)
+        {
+            if (framesSinceJump > 0) framesSinceJump++;
+            Debug.Log(framesSinceJump);
+        }
+        else framesSinceJump = 0;
+        
+        if (!(touchingGround)&& framesSinceJump > 2 && Input.GetAxis(Vertical[playerNum - 1]) > 0)
+        {
+            GetComponent<Rigidbody2D>().AddForce(new Vector2(0, extendedJumpForce));
+            if (framesSinceJump > 30)
+            {
+                framesSinceJump = 0;
+                touchingGround = false;
+            }
+        }**/
+
 
         //flips if neccesary
         if (move < 0 && !facingLeft)
@@ -58,11 +98,6 @@ public class EggMovement : MonoBehaviour {
 
     void Update()
     {
-        //if on the ground and the jump key is pressed, add a jump force
-        if (touchingGround && Input.GetAxis(Vertical[playerNum-1]) > 0)
-        {
-            GetComponent<Rigidbody2D>().AddForce(new Vector2(0, jumpForce));
-        }
 
 
     }
